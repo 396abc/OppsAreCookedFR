@@ -5,11 +5,12 @@ import time
 import os
 
 # --- CONFIGURATION ---
-usb_drive = "E:"  # Change if your USB drive is different
-state_file = os.path.join(usb_drive, "sigma_state.pkl")
-session_speed = 0.05  # seconds per combo
+state_file = "sigma_state.pkl"  # local save for VM testing
+session_speed = 0.01  # seconds per combo
 letters = string.ascii_lowercase
 numbers = string.digits
+print_every = 100  # print attempt every N combos
+save_every = 1000  # save progress every N combos
 
 # --- LOAD LAST COMBO INDEX ---
 if os.path.exists(state_file):
@@ -21,10 +22,21 @@ else:
 # --- MOCK UAC FUNCTION ---
 def mock_uac(user, password):
     os.system("cls")
-    print("╭━━━┳╮╱╭┳━━━┳━━━━┳━━━┳━━━╮╭━━━┳━━━╮")
-    print("┃╭━╮┃┃╱┃┃╭━╮┃╭╮╭╮┃╭━╮┃╭━╮┃╰╮╭╮┃╭━╮┃")
-    print("┃┃╱╰┫╰━╯┃┃╱┃┣╯┃┃╰┫┃╱╰┫╰━╯┣╯┃┃╰╯╱┃┃┃┃┃")
-    print("╰━━━┻╯╱╰┻╯╱╰╯╱╰╯╱╰━━━┻╯╱╱╰━━━┻╯╰━╯")
+    print(r"""
+██╗░█████╗░████████╗  ██╗░██████╗  ░█████╗░░█████╗░░█████╗░██╗░░██╗███████╗██████╗░
+██║██╔══██╗╚══██╔══╝  ██║██╔════╝  ██╔══██╗██╔══██╗██╔══██╗██║░██╔╝██╔════╝██╔══██╗
+██║██║░░╚═╝░░░██║░░░  ██║╚█████╗░  ██║░░╚═╝██║░░██║██║░░██║█████═╝░█████╗░░██║░░██║
+██║██║░░██╗░░░██║░░░  ██║░╚═══██╗  ██║░░██╗██║░░██║██║░░██║██╔═██╗░██╔══╝░░██║░░██║
+██║╚█████╔╝░░░██║░░░  ██║██████╔╝  ╚█████╔╝╚█████╔╝╚█████╔╝██║░╚██╗███████╗██████╔╝
+╚═╝░╚════╝░░░░╚═╝░░░  ╚═╝╚═════╝░  ░╚════╝░░╚════╝░░╚════╝░╚═╝░░╚═╝╚══════╝╚═════╝░
+
+███████╗██████╗░
+██╔════╝██╔══██╗
+█████╗░░██████╔╝
+██╔══╝░░██╔══██╗
+██║░░░░░██║░░██║
+╚═╝░░░░░╚═╝░░╚═╝
+""")
     print(f"User: {user}")
     print(f"Password: {password}")
     print("========================================")
@@ -43,10 +55,10 @@ def combo_generator():
 # --- MAIN SIGMA SIMULATION ---
 def main():
     user = input("Enter mock target user: ")
-    print("\nStarting Sigma Simulation...\n")
+    print("\nStarting Sigma Simulation on VM...\n")
     count = 0
     gen = combo_generator()
-    
+
     # skip combos already tried
     for _ in range(last_index):
         next(gen)
@@ -55,10 +67,13 @@ def main():
     try:
         for password in gen:
             count += 1
-            mock_uac(user, password)
 
-            # save progress to USB every 100 combos to reduce writes
-            if count % 100 == 0:
+            # print mock UAC only every N attempts
+            if count % print_every == 0:
+                mock_uac(user, password)
+
+            # save progress locally every N attempts
+            if count % save_every == 0:
                 with open(state_file, "wb") as f:
                     pickle.dump(count, f)
 

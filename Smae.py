@@ -6,10 +6,9 @@ import os
 
 # --- CONFIGURATION ---
 state_file = "sigma_state.pkl"  # local save for VM testing
-session_speed = 0.01  # seconds per combo
+session_speed = 0.005  # seconds per combo
 letters = string.ascii_lowercase
 numbers = string.digits
-print_every = 100  # print attempt every N combos
 save_every = 1000  # save progress every N combos
 
 # --- LOAD LAST COMBO INDEX ---
@@ -19,9 +18,8 @@ if os.path.exists(state_file):
 else:
     last_index = 0
 
-# --- MOCK UAC FUNCTION ---
-def mock_uac(user, password):
-    os.system("cls")
+# --- DISPLAY LOGO ONCE ---
+def display_logo():
     print(r"""
 ██╗░█████╗░████████╗  ██╗░██████╗  ░█████╗░░█████╗░░█████╗░██╗░░██╗███████╗██████╗░
 ██║██╔══██╗╚══██╔══╝  ██║██╔════╝  ██╔══██╗██╔══██╗██╔══██╗██║░██╔╝██╔════╝██╔══██╗
@@ -37,10 +35,6 @@ def mock_uac(user, password):
 ██║░░░░░██║░░██║
 ╚═╝░░░░░╚═╝░░╚═╝
 """)
-    print(f"User: {user}")
-    print(f"Password: {password}")
-    print("========================================")
-    time.sleep(session_speed)
 
 # --- GENERATOR FUNCTION ---
 def combo_generator():
@@ -54,6 +48,7 @@ def combo_generator():
 
 # --- MAIN SIGMA SIMULATION ---
 def main():
+    display_logo()
     user = input("Enter mock target user: ")
     print("\nStarting Sigma Simulation on VM...\n")
     count = 0
@@ -67,10 +62,7 @@ def main():
     try:
         for password in gen:
             count += 1
-
-            # print mock UAC only every N attempts
-            if count % print_every == 0:
-                mock_uac(user, password)
+            print(f"Trying password: {password}", end="\r")  # only show current attempt
 
             # save progress locally every N attempts
             if count % save_every == 0:

